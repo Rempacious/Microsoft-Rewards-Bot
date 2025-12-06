@@ -1,6 +1,9 @@
+const { randomUUID } = require('crypto')
+
 const MAX_BODY_SIZE = 10000
 const MAX_TEXT = 900
 const MAX_FIELD = 120
+const MAX_STACK_LINES = 8
 const AUTH_HEADER = 'x-error-report-token'
 
 function isPlainObject(value) {
@@ -96,6 +99,10 @@ module.exports = async function handler(req, res) {
     const errorType = trimAndLimit(body.type || 'unspecified', 80)
     const environment = trimAndLimit((body.environment && (body.environment.name || body.environment)) || process.env.VERCEL_ENV || process.env.NODE_ENV || 'unspecified', 80)
     const metadata = formatMetadata(body.metadata)
+    const stackSnippet = Array.isArray(body.stack)
+        ? body.stack.slice(0, MAX_STACK_LINES).join('\n')
+        : trimAndLimit(typeof body.stack === 'string' ? body.stack.split('\n').slice(0, MAX_STACK_LINES).join('\n') : '', MAX_TEXT)
+    const requestId = randomUUID()
 
     const embed = {
         title: 'Error Report',
@@ -104,7 +111,8 @@ module.exports = async function handler(req, res) {
         fields: [
             { name: 'Error', value: errorText, inline: false },
             { name: 'Type', value: errorType, inline: true },
-            { name: 'Environment', value: environment, inline: true }
+            { name: 'Environment', value: environment, inline: true },
+            { name: 'Request ID', value: requestId, inline: true }
         ],
         footer: { text: 'Microsoft Rewards Bot' },
         timestamp: new Date().toISOString()
@@ -112,6 +120,10 @@ module.exports = async function handler(req, res) {
 
     if (metadata && metadata !== 'Not provided') {
         embed.fields.push({ name: 'Metadata', value: metadata, inline: false })
+    }
+
+    if (stackSnippet) {
+        embed.fields.push({ name: 'Stack (truncated)', value: stackSnippet })
     }
 
     const payload = { embeds: [embed] }
