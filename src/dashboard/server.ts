@@ -21,9 +21,16 @@ export class DashboardServer {
   private server: ReturnType<typeof createServer>
   private wss: WebSocketServer
   private clients: Set<WebSocket> = new Set()
+  private heartbeatInterval?: NodeJS.Timer
   private dashboardLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 100, // limit each IP to 100 requests per windowMs for dashboard UI
+    standardHeaders: true,
+    legacyHeaders: false,
+  })
+  private apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 300, // reasonable cap for API interactions
     standardHeaders: true,
     legacyHeaders: false,
   })
@@ -67,7 +74,7 @@ export class DashboardServer {
   }
 
   private setupRoutes(): void {
-    this.app.use('/api', apiRouter)
+    this.app.use('/api', this.apiLimiter, apiRouter)
 
     // Health check
     this.app.get('/health', (_req, res) => {
@@ -107,15 +114,22 @@ export class DashboardServer {
 
   private setupWebSocket(): void {
     this.wss.on('connection', (ws: WebSocket) => {
-      this.clients.add(ws)
+      const tracked = ws as WebSocket & { isAlive?: boolean }
+      tracked.isAlive = true
+
+      this.clients.add(tracked)
       dashLog('WebSocket client connected')
 
-      ws.on('close', () => {
-        this.clients.delete(ws)
+      tracked.on('pong', () => {
+        tracked.isAlive = true
+      })
+
+      tracked.on('close', () => {
+        this.clients.delete(tracked)
         dashLog('WebSocket client disconnected')
       })
 
-      ws.on('error', (error) => {
+      tracked.on('error', (error) => {
         dashLog(`WebSocket error: ${error instanceof Error ? error.message : String(error)}`, 'error')
       })
 
@@ -124,7 +138,7 @@ export class DashboardServer {
       const status = dashboardState.getStatus()
       const accounts = dashboardState.getAccounts()
 
-      ws.send(JSON.stringify({
+      tracked.send(JSON.stringify({
         type: 'init',
         data: {
           logs: recentLogs,
@@ -133,6 +147,26 @@ export class DashboardServer {
         }
       }))
     })
+
+    // Heartbeat to drop dead connections and keep memory clean
+    this.heartbeatInterval = setInterval(() => {
+      for (const client of this.clients) {
+        const tracked = client as WebSocket & { isAlive?: boolean }
+        if (tracked.isAlive === false) {
+          tracked.terminate()
+          this.clients.delete(tracked)
+          continue
+        }
+        tracked.isAlive = false
+        try {
+          tracked.ping()
+        } catch (error) {
+          dashLog(`WebSocket ping error: ${error instanceof Error ? error.message : String(error)}`, 'error')
+          tracked.terminate()
+          this.clients.delete(tracked)
+        }
+      }
+    }, 30000)
   }
 
   private interceptBotLogs(): void {
@@ -192,6 +226,10 @@ export class DashboardServer {
   }
 
   public stop(): void {
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval)
+      this.heartbeatInterval = undefined
+    }
     this.wss.close()
     this.server.close()
     dashLog('Server stopped')
