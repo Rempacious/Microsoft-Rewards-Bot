@@ -34,6 +34,24 @@ export class PasskeyHandler {
     public async handlePasskeyPrompts(page: Page, context: 'main' | 'oauth') {
         let did = false
 
+        // Early exit for passkey creation flows (common on mobile): hit cancel/skip if present
+        const currentUrl = page.url()
+        if (/fido\/create|passkey/i.test(currentUrl)) {
+            const cancelled = await this.clickFirstVisible(page, [
+                'button:has-text("Cancel")',
+                'button:has-text("Not now")',
+                'button:has-text("Skip")',
+                'button:has-text("No thanks")',
+                '[data-testid="secondaryButton"]',
+                'button[class*="secondary"]'
+            ], 500)
+
+            if (cancelled) {
+                did = true
+                this.logPasskeyOnce('fido/create cancel')
+            }
+        }
+
         // Priority 1: Direct detection of "Skip for now" button by data-testid
         const skipBtnResult = await waitForElementSmart(page, 'button[data-testid="secondaryButton"]', {
             initialTimeoutMs: 300,
@@ -194,6 +212,18 @@ export class PasskeyHandler {
         } else if (did) {
             this.noPromptIterations = 0
         }
+    }
+
+    private async clickFirstVisible(page: Page, selectors: string[], timeoutMs = 300): Promise<boolean> {
+        for (const selector of selectors) {
+            const el = page.locator(selector).first()
+            const visible = await el.isVisible({ timeout: timeoutMs }).catch(() => false)
+            if (!visible) continue
+
+            await el.click().catch(logError('LOGIN-PASSKEY', `Click failed for ${selector}`, this.bot.isMobile))
+            return true
+        }
+        return false
     }
 
     private logPasskeyOnce(reason: string) {
