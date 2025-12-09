@@ -241,7 +241,7 @@ async function main() {
     log('   • Accounts: src/accounts.jsonc ✓')
     log('   • Dependencies: node_modules ✓\n')
 
-    const choice = (await prompt('What would you like to do?\n  [1] Start the bot (npm start)\n  [2] Re-run setup\n  [3] Exit\nChoice (1-3): ')).trim()
+    const choice = (await prompt('What would you like to do?\n  [1] Start the bot (npm start)\n  [2] Re-run setup\n  [3] Check for updates\n  [4] Exit\nChoice (1-4): ')).trim()
 
     if (choice === '1' || choice === '') {
       await launchBot()
@@ -249,6 +249,15 @@ async function main() {
     } else if (choice === '2') {
       log('\n🔄 Re-running full setup...\n')
       // Continue to performSetup below
+    } else if (choice === '3') {
+      log('\n🔄 Checking for updates...\n')
+      try {
+        await runCommand(process.platform === 'win32' ? 'npm.cmd' : 'npm', ['run', 'update'])
+        log('\n✅ Update check complete!')
+      } catch (err) {
+        error('\n❌ Update failed: ' + err.message)
+      }
+      process.exit(0)
     } else {
       log('\n👋 Goodbye!\n')
       process.exit(0)
