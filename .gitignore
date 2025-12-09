@@ -20,3 +20,4 @@ accounts.main.jsonc
 .update-extract/
 .update-happened
 .update-restart-count
+src/accounts.example.jsonc
