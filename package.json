@@ -26,7 +26,6 @@
     "creator": "ts-node ./src/account-creation/cli.ts",
     "dashboard": "node --enable-source-maps ./dist/index.js -dashboard",
     "dashboard:dev": "ts-node ./src/index.ts -dashboard",
-    "setup": "node ./scripts/installer/setup.mjs",
     "update": "node ./scripts/installer/update.mjs",
     "lint": "eslint \"src/**/*.{ts,tsx}\"",
     "lint:fix": "eslint \"src/**/*.{ts,tsx}\" --fix",
@@ -69,6 +68,7 @@
   },
   "dependencies": {
     "axios": "^1.8.4",
+    "discord.js": "^14.16.3",
     "chalk": "^4.1.2",
     "cheerio": "^1.0.0",
     "express": "^4.21.2",

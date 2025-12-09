@@ -1042,6 +1042,25 @@ async function main(): Promise<void> {
         log('main', 'DASHBOARD', `Auto-started dashboard on http://${host}:${port}`)
     }
 
+    // Auto-start Discord bot if enabled
+    if (config.discordBot?.enabled) {
+        log('main', 'DISCORD', 'Discord bot enabled in config, starting...')
+        try {
+            const { DiscordBot } = await import('./discord/DiscordBot')
+            const discordBot = new DiscordBot(config, scheduler)
+            const started = await discordBot.start()
+            if (started) {
+                log('main', 'DISCORD', 'Discord bot auto-started successfully')
+            } else {
+                log('main', 'DISCORD', 'Discord bot failed to start (check token/config)', 'warn')
+            }
+        } catch (error) {
+            log('main', 'DISCORD', `Discord bot initialization error: ${error instanceof Error ? error.message : String(error)}`, 'error')
+        }
+    } else {
+        log('main', 'DISCORD', `Discord bot disabled (discordBot.enabled=${config.discordBot?.enabled})`)
+    }
+
     /**
      * Attach global error handlers for graceful shutdown
      * IMPROVED: Added error handling documentation

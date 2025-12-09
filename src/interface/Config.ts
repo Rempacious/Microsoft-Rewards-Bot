@@ -31,6 +31,7 @@ export interface Config {
     dashboard?: ConfigDashboard; // Local web dashboard for monitoring and control
     scheduling?: ConfigScheduling; // Automatic scheduler configuration (cron/Task Scheduler)
     errorReporting?: ConfigErrorReporting; // Automatic error reporting to community webhook
+    discordBot?: ConfigDiscordBot; // Discord bot control via slash commands
 }
 
 export interface ConfigSaveFingerprint {
@@ -211,4 +212,11 @@ export interface ConfigScheduling {
 
 export interface ConfigErrorReporting {
     enabled?: boolean; // enable automatic error reporting to community webhook (default: true)
+}
+
+export interface ConfigDiscordBot {
+    enabled?: boolean; // Enable Discord bot control
+    token?: string; // Bot token (use DISCORD_BOT_TOKEN env var for security)
+    allowedUserIds?: string[]; // Discord user IDs allowed to control the bot
+    guildId?: string; // Optional: Guild ID for instant slash command registration
 }

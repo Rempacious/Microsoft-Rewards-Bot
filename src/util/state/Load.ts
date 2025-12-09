@@ -242,7 +242,8 @@ function normalizeConfig(raw: unknown): Config {
         dryRun,
         queryDiversity,
         dashboard,
-        scheduling
+        scheduling,
+        discordBot: n.discordBot
     }
 
     return cfg

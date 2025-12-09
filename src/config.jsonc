@@ -159,6 +159,17 @@
         "autoUpdateConfig": false,
         "autoUpdateAccounts": false
     },
+    // === DISCORD BOT ===
+    // Control the bot via Discord slash commands
+    // Create a Discord Application and Bot at: https://discord.com/developers/applications
+    "discordBot": {
+        "enabled": true, // Set to true to enable Discord bot control
+        "token": "", // Bot token (or use DISCORD_BOT_TOKEN env var)
+        "allowedUserIds": [
+            ""
+        ], // Discord user IDs that can control the bot
+        "guildId": "" // Optional: Your server ID for instant command registration
+    },
     // === ERROR REPORTING ===
     // Help improve the project by automatically reporting errors (no sensitive data sent)
     "errorReporting": {
