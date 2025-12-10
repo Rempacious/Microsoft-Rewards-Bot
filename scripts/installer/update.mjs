@@ -283,7 +283,7 @@ async function checkVersion() {
     // Fetch remote version from GitHub API (no cache)
     const repoOwner = 'Rempacious'
     const repoName = 'Microsoft-Rewards-Bot'
-    const branch = 'main'
+    const branch = 'stable'
 
     console.log('🔍 Checking for updates...')
     console.log(`   Local:  ${localVersion}`)
@@ -450,7 +450,7 @@ async function performUpdate() {
   process.stdout.write('📥 Downloading...')
   const repoOwner = 'Rempacious'
   const repoName = 'Microsoft-Rewards-Bot'
-  const branch = 'main'
+  const branch = 'stable'
   const archiveUrl = `https://github.com/${repoOwner}/${repoName}/archive/refs/heads/${branch}.zip`
 
   const archivePath = join(process.cwd(), '.update-download.zip')
