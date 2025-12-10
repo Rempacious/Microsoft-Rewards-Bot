@@ -92,7 +92,16 @@ export class MobileFlow {
             const safeInitialPoints = initialPoints ?? 0
 
             const browserEarnablePoints = await this.bot.browser.func.getBrowserEarnablePoints()
-            const appEarnablePoints = await this.bot.browser.func.getAppEarnablePoints(accessToken)
+
+            // IMPROVED: Handle OAuth skip - when accessToken is empty, skip app-specific activities
+            let appEarnablePoints = { readToEarn: 0, checkIn: 0, totalEarnablePoints: 0 }
+            const hasValidToken = !!accessToken && accessToken.length > 0
+
+            if (hasValidToken) {
+                appEarnablePoints = await this.bot.browser.func.getAppEarnablePoints(accessToken)
+            } else {
+                this.bot.log(true, 'MOBILE-FLOW', 'OAuth token not available - skipping app-specific activities (daily check-in, read to earn)', 'warn')
+            }
 
             const pointsCanCollect = browserEarnablePoints.mobileSearchPoints + appEarnablePoints.totalEarnablePoints
 
@@ -113,13 +122,13 @@ export class MobileFlow {
                 }
             }
 
-            // Do daily check in
-            if (this.bot.config.workers.doDailyCheckIn) {
+            // Do daily check in (only if we have a valid access token)
+            if (this.bot.config.workers.doDailyCheckIn && hasValidToken) {
                 await this.bot.activities.doDailyCheckIn(accessToken, data)
             }
 
-            // Do read to earn
-            if (this.bot.config.workers.doReadToEarn) {
+            // Do read to earn (only if we have a valid access token)
+            if (this.bot.config.workers.doReadToEarn && hasValidToken) {
                 await this.bot.activities.doReadToEarn(accessToken, data)
             }
 

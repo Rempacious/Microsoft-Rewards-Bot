@@ -317,6 +317,15 @@ export class Login {
             if (u.hostname === 'login.live.com' && u.pathname === '/oauth20_desktop.srf') {
                 code = u.searchParams.get('code') || ''
                 if (code) break
+
+                // Check for "page not normally shown" - this means OAuth failed, skip and proceed
+                const pageContent = await page.content().catch(() => '')
+                if (pageContent.includes('page that is not normally shown') ||
+                    pageContent.includes('Microsoft will never ask you to copy or share this URL')) {
+                    this.bot.log(this.bot.isMobile, 'LOGIN-APP', 'OAuth redirect page detected (page not normally shown) - skipping OAuth token fetch', 'warn')
+                    this.totpHandler.setTotpSecret(undefined)
+                    return '' // Return empty token to signal skip
+                }
             }
 
             if (checkCount % 3 === 0) {

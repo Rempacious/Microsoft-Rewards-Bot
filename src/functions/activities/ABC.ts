@@ -2,6 +2,7 @@ import { Page } from 'rebrowser-playwright'
 
 import { RETRY_LIMITS, TIMEOUTS } from '../../constants'
 import { waitForElementSmart } from '../../util/browser/SmartWait'
+import { isInvalidPage } from '../../util/validation/PageValidator'
 import { Workers } from '../Workers'
 
 
@@ -11,6 +12,14 @@ export class ABC extends Workers {
         this.bot.log(this.bot.isMobile, 'ABC', 'Trying to complete poll')
 
         try {
+            // Check for invalid page before attempting activity
+            const pageCheck = await isInvalidPage(page)
+            if (pageCheck.invalid) {
+                this.bot.log(this.bot.isMobile, 'ABC', `Invalid page detected: ${pageCheck.reason}, aborting`, 'warn')
+                await page.close()
+                return
+            }
+
             let $ = await this.bot.browser.func.loadInCheerio(page)
 
             let i

@@ -2,6 +2,7 @@ import { Page } from 'rebrowser-playwright'
 
 import { DELAYS } from '../../constants'
 import { waitForElementSmart } from '../../util/browser/SmartWait'
+import { isInvalidPage } from '../../util/validation/PageValidator'
 import { Workers } from '../Workers'
 
 
@@ -12,6 +13,14 @@ export class ThisOrThat extends Workers {
 
 
         try {
+            // Check for invalid page before attempting activity
+            const pageCheck = await isInvalidPage(page)
+            if (pageCheck.invalid) {
+                this.bot.log(this.bot.isMobile, 'THIS-OR-THAT', `Invalid page detected: ${pageCheck.reason}, aborting`, 'warn')
+                await page.close()
+                return
+            }
+
             // IMPROVED: Smart wait replaces fixed 2s timeout with adaptive detection
             const startQuizResult = await waitForElementSmart(page, '#rqStartQuiz', {
                 initialTimeoutMs: 1000,

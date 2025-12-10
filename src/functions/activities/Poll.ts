@@ -2,6 +2,7 @@ import { Page } from 'rebrowser-playwright'
 
 import { TIMEOUTS } from '../../constants'
 import { waitForElementSmart } from '../../util/browser/SmartWait'
+import { isInvalidPage } from '../../util/validation/PageValidator'
 import { Workers } from '../Workers'
 
 
@@ -11,6 +12,14 @@ export class Poll extends Workers {
         this.bot.log(this.bot.isMobile, 'POLL', 'Trying to complete poll')
 
         try {
+            // Check for invalid page before attempting activity
+            const pageCheck = await isInvalidPage(page)
+            if (pageCheck.invalid) {
+                this.bot.log(this.bot.isMobile, 'POLL', `Invalid page detected: ${pageCheck.reason}, aborting`, 'warn')
+                await page.close()
+                return
+            }
+
             const buttonId = `#btoption${Math.floor(this.bot.utils.randomNumber(0, 1))}`
 
             // IMPROVED: Smart wait replaces fixed 10s timeout with adaptive 2s+5s detection

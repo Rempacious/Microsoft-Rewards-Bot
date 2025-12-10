@@ -9,6 +9,7 @@ import { Retry } from '../util/core/Retry'
 import { AdaptiveThrottler } from '../util/notifications/AdaptiveThrottler'
 import { logError } from '../util/notifications/Logger'
 import JobState from '../util/state/JobState'
+import { validateAndRedirect } from '../util/validation/PageValidator'
 
 // Selector patterns (extracted to avoid magic strings)
 const ACTIVITY_SELECTORS = {
@@ -298,6 +299,13 @@ export class Workers {
         }
 
         page = await this.bot.browser.utils.getLatestTab(page)
+
+        // Validate page after click - redirect to rewards if invalid
+        const isValidPage = await validateAndRedirect(page, this.bot)
+        if (!isValidPage) {
+            this.bot.log(this.bot.isMobile, 'ACTIVITY', `Activity "${activity.title}" page was invalid, redirected to rewards home`, 'warn')
+            return // Exit early since we redirected
+        }
 
         // Execute activity with timeout protection using Promise.race
         const timeoutMs = this.bot.utils.stringToMs(this.bot.config?.globalTimeout ?? '30s') * 2
