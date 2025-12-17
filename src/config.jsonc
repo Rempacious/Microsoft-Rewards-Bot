@@ -29,7 +29,7 @@
     },
     // === SEARCH ===
     "search": {
-        "useLocalQueries": false,
+        "useLocalQueries": true,
         "settings": {
             "useGeoLocaleQueries": true,
             "scrollRandomResults": true,
@@ -67,7 +67,7 @@
         "allowedWindows": []
     },
     "vacation": {
-        "enabled": true,
+        "enabled": false,
         "minDays": 2,
         "maxDays": 4
     },
@@ -173,6 +173,6 @@
     // === ERROR REPORTING ===
     // Help improve the project by automatically reporting errors (no sensitive data sent)
     "errorReporting": {
-        "enabled": true
+        "enabled": false
     }
 }

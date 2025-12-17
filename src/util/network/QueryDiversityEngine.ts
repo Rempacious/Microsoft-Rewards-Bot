@@ -148,28 +148,49 @@ export class QueryDiversityEngine {
   }
 
   /**
-   * Fetch from Google Trends (existing logic can be reused)
+   * Fetch from Google Trends using realtime trends endpoint
    */
   private async fetchGoogleTrends(): Promise<string[]> {
-    try {
-      // Google Trends API requires additional parameters for reliability
-      const data = await this.fetchHttp('https://trends.google.com/trends/api/dailytrends?hl=en-US&tz=-480&geo=US&ns=15')
-      const cleaned = data.toString().replace(')]}\',', '')
-      const parsed = JSON.parse(cleaned)
+    const geoRegions = ['US', 'GB', 'CA']
 
-      const queries: string[] = []
-      for (const item of parsed.default.trendingSearchesDays || []) {
-        for (const search of item.trendingSearches || []) {
-          if (search.title?.query) {
-            queries.push(search.title.query)
+    for (const geo of geoRegions) {
+      try {
+        // Try realtime trends endpoint (more reliable than deprecated dailytrends)
+        const data = await this.fetchHttp(
+          `https://trends.google.com/trending/rss?geo=${geo}`,
+          { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' } }
+        )
+
+        // Parse RSS feed for trending topics
+        const queries: string[] = []
+        const titleMatches = data.matchAll(/<title><!\[CDATA\[(.*?)\]\]><\/title>/gi)
+        for (const match of titleMatches) {
+          const title = match[1]?.trim()
+          if (title && title.length > 2 && title !== 'Daily Search Trends' && !title.includes('Google Trends')) {
+            queries.push(title)
           }
         }
-      }
 
-      return queries.slice(0, 20)
-    } catch {
-      return []
+        // Also try to extract from item titles without CDATA
+        const simpleTitleMatches = data.matchAll(/<item>[\s\S]*?<title>(.*?)<\/title>/gi)
+        for (const match of simpleTitleMatches) {
+          const title = match[1]?.replace(/<!\[CDATA\[(.*?)\]\]>/, '$1').trim()
+          if (title && title.length > 2 && !queries.includes(title) && !title.includes('Google Trends')) {
+            queries.push(title)
+          }
+        }
+
+        if (queries.length > 0) {
+          return queries.slice(0, 20)
+        }
+      } catch {
+        // Try next geo region
+        continue
+      }
     }
+
+    // If RSS fails, return empty (will use local fallback)
+    return []
   }
 
   /**
