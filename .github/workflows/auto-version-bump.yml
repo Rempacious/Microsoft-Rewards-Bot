@@ -11,7 +11,7 @@ jobs:
   bump-version:
     runs-on: ubuntu-latest
     # Prevent running on version bump commits to avoid infinite loop
-    if: "!contains(github.event.head_commit.message, '[skip ci]') && !contains(github.event.head_commit.message, 'chore: bump version')"
+    if: '!contains(github.event.head_commit.message, ''[skip ci]'') && !contains(github.event.head_commit.message, ''chore: bump version'')'
     
     permissions:
       contents: write
