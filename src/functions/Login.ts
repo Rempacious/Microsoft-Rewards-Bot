@@ -318,11 +318,25 @@ export class Login {
                 code = u.searchParams.get('code') || ''
                 if (code) break
 
-                // Check for "page not normally shown" - this means OAuth failed, skip and proceed
+                // Check for "page not normally shown" - this means OAuth failed or encountered an interstitial
                 const pageContent = await page.content().catch(() => '')
                 if (pageContent.includes('page that is not normally shown') ||
                     pageContent.includes('Microsoft will never ask you to copy or share this URL')) {
-                    this.bot.log(this.bot.isMobile, 'LOGIN-APP', 'OAuth redirect page detected (page not normally shown) - skipping OAuth token fetch', 'warn')
+
+                    this.bot.log(this.bot.isMobile, 'LOGIN-APP', 'OAuth redirect page detected (page not normally shown) - attempting one reload...', 'warn')
+
+                    // Attempt a reload once to see if it bypasses the interstitial
+                    await page.reload({ waitUntil: 'domcontentloaded', timeout: 10000 }).catch(() => { })
+                    await this.bot.utils.wait(2000)
+
+                    // Check again after reload
+                    const uPostReload = new URL(page.url())
+                    if (uPostReload.hostname === 'login.live.com' && uPostReload.pathname === '/oauth20_desktop.srf') {
+                        code = uPostReload.searchParams.get('code') || ''
+                        if (code) break
+                    }
+
+                    this.bot.log(this.bot.isMobile, 'LOGIN-APP', 'OAuth still stuck on redirect page after reload - skipping OAuth token fetch', 'warn')
                     this.totpHandler.setTotpSecret(undefined)
                     return '' // Return empty token to signal skip
                 }

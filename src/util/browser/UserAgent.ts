@@ -26,10 +26,10 @@ const NOT_A_BRAND_VERSION = '99'
 const EDGE_VERSION_URL = 'https://edgeupdates.microsoft.com/api/products'
 const EDGE_VERSION_CACHE_TTL_MS = 1000 * 60 * 60
 
-// Static fallback versions (updated periodically, valid as of October 2024)
+// Static fallback versions (updated periodically, valid as of December 2025)
 const FALLBACK_EDGE_VERSIONS: EdgeVersionResult = {
-    android: '130.0.2849.66',
-    windows: '130.0.2849.68'
+    android: '143.0.3650.88',
+    windows: '143.0.3650.96'
 }
 
 type EdgeVersionResult = {
@@ -304,6 +304,7 @@ function mapEdgeVersions(data: EdgeVersion[]): EdgeVersionResult {
     return result
 }
 
+
 export async function updateFingerprintUserAgent(fingerprint: BrowserFingerprintWithHeaders, isMobile: boolean): Promise<BrowserFingerprintWithHeaders> {
     try {
         const userAgentData = await getUserAgent(isMobile)
@@ -316,6 +317,11 @@ export async function updateFingerprintUserAgent(fingerprint: BrowserFingerprint
         fingerprint.headers['user-agent'] = userAgentData.userAgent
         fingerprint.headers['sec-ch-ua'] = `"Microsoft Edge";v="${componentData.edge_major_version}", "Not=A?Brand";v="${componentData.not_a_brand_major_version}", "Chromium";v="${componentData.chrome_major_version}"`
         fingerprint.headers['sec-ch-ua-full-version-list'] = `"Microsoft Edge";v="${componentData.edge_version}", "Not=A?Brand";v="${componentData.not_a_brand_version}", "Chromium";v="${componentData.chrome_version}"`
+
+        // Add mobile-specific headers to better mimic Edge Android
+        if (isMobile) {
+            fingerprint.headers['x-requested-with'] = 'com.microsoft.emmx'
+        }
 
         return fingerprint
     } catch (error) {
